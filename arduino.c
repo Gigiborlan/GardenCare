@@ -6,13 +6,63 @@ const char turnPumpOn = '4';
 const int moistureSensorPin = A0;
 const int lampPin = 12;
 const int pumpPin = 13;
+const int moisutreLimit = 300;
 
-unsigned long pumpTurnedOnBeginTime = 0;
+unsigned long pumpTurnedOnTime = 0;
 unsigned long currentTime = 0;
+unsigned long lampTurnedOnTime = 0;
+unsigned long lampTurnedOffTime = 0;
 const unsigned long pumpTotalTimeOn = 3000;
+const unsigned long lampTotalTimeOn = 36000000; //18h
+const unsigned long lampTotalTimeOff = 21600000; //6h
+
+bool lampStatus = false;
 
 int moistureSensorValue = 0;
 char rasberryComand = 0;
+
+void initializeLamp(){
+  digitalWrite(lampPin, HIGH);
+  lampTurnedOnBeginTime = millis();
+  lampStatus = true;
+}
+
+bool shouldTurnLampOn(){
+  if(lampStatus == false){
+    currentTime = millis();
+    if ( currentTime - lampTurnedOffTime >= lampTotalTimeOff ){
+      lampStatus = true;
+      lampTurnedOnBeginTime = millis();
+      return true;
+    }
+  }
+  return false;
+}
+
+bool shouldTurnLampOff(){
+  if(lampStatus == true){
+    currentTime = millis();
+    if ( currentTime - lampTurnedOnTime >= lampTotalTimeOn ){
+      lampStatus = false;
+      lampTurnedOffTime = millis();
+      return true;
+    }
+  }
+  return false;
+}
+
+bool shouldTurnPumpOn(){
+  moistureSensorValue = analogRead(moistureSensorPin);
+  Serial.print("Moisture: ");
+  Serial.println(moistureSensorValue);
+  
+  if ( moistureSensorValue > moisutreLimit ){
+    pumpTurnedOnBeginTime = millis();
+    return true;
+  }
+  return false;
+}
+
 
 bool shouldTurnPumpOff(){
   if ( pumpTurnedOnBeginTime != 0 ){
@@ -29,30 +79,26 @@ void setup() {
   Serial.begin(9600);
   pinMode(lampPin, OUTPUT);
   pinMode(pumpPin, OUTPUT);
+  initializeLamp();
 }
 
 void loop() { 
-  if (Serial.available() > 0) {
-    rasberryComand = Serial.read();
-    if (rasberryComand == readMoistureSensor ) {
-      moistureSensorValue = analogRead(moistureSensorPin);
-      Serial.println(moistureSensorValue);
-    }
-    if (rasberryComand == turnLampOn ) {
-      digitalWrite(lampPin, HIGH);
-      Serial.println("Lamp turned on");
-    }
-    if (rasberryComand == turnLampOff ) {
-      digitalWrite(lampPin, LOW);
-      Serial.println("Lamp turned off");
-    }
-    if (rasberryComand == turnPumpOn ) {
+  if (shouldTurnLampOn() == true ) {
+    digitalWrite(lampPin, HIGH);
+    Serial.println("Lamp turned on");
+  }
+  
+  if (shouldTurnLampOff() == true ) {
+    digitalWrite(lampPin, LOW);
+    Serial.println("Lamp turned off");
+    
+    //Pump turns on along with lights turn off
+    if ( shouldTurnPumpOn() == true ) {
       digitalWrite(pumpPin, HIGH);
-      pumpTurnedOnBeginTime = millis();
       Serial.println("Pump turned on");
     }
   }
-  
+
   if ( shouldTurnPumpOff() == true ){
    digitalWrite(pumpPin, LOW);
    Serial.println("Pump turned off");
