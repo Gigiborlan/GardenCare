@@ -16,6 +16,11 @@ const unsigned long pumpTotalTimeOn = 3000;
 const unsigned long lampTotalTimeOn = 36000000; //18h
 const unsigned long lampTotalTimeOff = 21600000; //6h
 
+//Test values
+//const unsigned long pumpTotalTimeOn = 1000; //1s
+//const unsigned long lampTotalTimeOn = 5000; //4s
+//const unsigned long lampTotalTimeOff = 5000; //2s
+
 bool lampStatus = false;
 
 int moistureSensorValue = 0;
@@ -23,7 +28,8 @@ char rasberryComand = 0;
 
 void initializeLamp(){
   digitalWrite(lampPin, HIGH);
-  lampTurnedOnBeginTime = millis();
+  lampTurnedOnTime = millis();
+  Serial.println("Lamp turned on");
   lampStatus = true;
 }
 
@@ -32,7 +38,7 @@ bool shouldTurnLampOn(){
     currentTime = millis();
     if ( currentTime - lampTurnedOffTime >= lampTotalTimeOff ){
       lampStatus = true;
-      lampTurnedOnBeginTime = millis();
+      lampTurnedOnTime = millis();
       return true;
     }
   }
@@ -57,7 +63,7 @@ bool shouldTurnPumpOn(){
   Serial.println(moistureSensorValue);
   
   if ( moistureSensorValue > moisutreLimit ){
-    pumpTurnedOnBeginTime = millis();
+    pumpTurnedOnTime = millis();
     return true;
   }
   return false;
@@ -65,10 +71,10 @@ bool shouldTurnPumpOn(){
 
 
 bool shouldTurnPumpOff(){
-  if ( pumpTurnedOnBeginTime != 0 ){
+  if ( pumpTurnedOnTime != 0 ){
     currentTime = millis();
-    if ( currentTime - pumpTurnedOnBeginTime >= pumpTotalTimeOn ){
-      pumpTurnedOnBeginTime = 0;
+    if ( currentTime - pumpTurnedOnTime >= pumpTotalTimeOn ){
+      pumpTurnedOnTime = 0;
       return true;
     }
   }
@@ -86,17 +92,17 @@ void loop() {
   if (shouldTurnLampOn() == true ) {
     digitalWrite(lampPin, HIGH);
     Serial.println("Lamp turned on");
+    
+    //Pump turns on along with lights turn on
+    if ( shouldTurnPumpOn() == true ) {
+      digitalWrite(pumpPin, HIGH);
+      Serial.println("Pump turned on");
+    }
   }
   
   if (shouldTurnLampOff() == true ) {
     digitalWrite(lampPin, LOW);
     Serial.println("Lamp turned off");
-    
-    //Pump turns on along with lights turn off
-    if ( shouldTurnPumpOn() == true ) {
-      digitalWrite(pumpPin, HIGH);
-      Serial.println("Pump turned on");
-    }
   }
 
   if ( shouldTurnPumpOff() == true ){
