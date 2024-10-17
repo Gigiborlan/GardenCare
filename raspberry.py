@@ -1,23 +1,24 @@
 import serial
 import time
+from datetime import datetime
+import requests
 
-porta_serial = 'COM3' 
+
+porta_serial = '/dev/ttyACM0' 
 baud_rate = 9600
 timeout = 1
 
 ser = serial.Serial(porta_serial, baudrate=baud_rate, timeout=timeout)
 
-comando = input()[0]
-
-while comando != '9':	
-	ser.write(comando.encode())
-
-	resposta = ser.readline().decode('utf-8').strip()
-
-	print(f'Resposta do Arduino: {resposta}')
-
-	comando = input()[0]
-
-ser.close()
-
-
+try:
+    while True:
+        #if datetime.now().minute == 30
+        if datetime.now().hour == 20:
+            ser.write("1".encode())
+            while ser.in_waiting == 0:
+                pass
+            resposta = ser.readline().decode('utf-8').strip()
+            print(f'Resposta do Arduino: {resposta}')
+            time.sleep(1)
+finally:
+    ser.close()
