@@ -3,7 +3,7 @@ import time
 from datetime import datetime
 import requests
 
-
+#teste
 porta_serial = '/dev/ttyACM0' 
 baud_rate = 9600
 timeout = 1
